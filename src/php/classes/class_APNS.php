@@ -675,6 +675,37 @@ class APNS {
 
 	}
 
+	/**
+	 * Start a New Message.  Like newMessage, but takes an app name and optionally app version.
+	 * The purpose is to send a message to all users of that app (and specific version).
+	 * Fetches the devices pids from the db and then calls the plain newMessage.
+	 *
+	 * @param string $appName The application name
+	 * @param string @appVersion The application version (optional)
+	 * @param string $delivery Possible future date to send the message.
+	 * @access public
+	 */
+	public function newMessageByApp($appName, $appVersion=NULL, $delivery=NULL, $clientId=NULL) {
+
+		// Grab pid of all devices using this app and version
+		$sql = "SELECT `pid` FROM `apns_devices` WHERE `appname` = '{$this->db->prepare($appName)}'";
+		if ($appVersion != NULL)
+			$sql .= " AND `appversion` = '{$this->db->prepare($appVersion)}'";
+
+		$result = $this->db->query($sql);
+
+		$pids = array();
+		while ($row = $result->fetch_array(MYSQLI_ASSOC))
+		{
+			$pids[] = $row['pid'];
+		}
+
+		if (count($pids) > 0)
+		{
+			// If any devices are found, send message as usual
+			$this->newMessage($pids, $delivery, $clientId);
+		}
+	}
 
 
 
