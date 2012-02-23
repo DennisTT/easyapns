@@ -139,6 +139,14 @@ class APNS {
 	private $message;
 
 	/**
+	* Client ID to use when registering devices and pushing notifications
+	*
+	* @var string
+	* @access private
+	*/
+	private $clientId;
+
+	/**
 	 * Constructor.
 	 *
 	 * Initializes a database connection and perfoms any tasks that have been assigned.
@@ -167,13 +175,14 @@ class APNS {
 	 * https://secure.yourwebsite.com/apns.php?task=register&appname=My%20App&appversion=1.0.1&deviceuid=e018c2e46efe185d6b1107aa942085a59bb865d9&devicetoken=43df9e97b09ef464a6cf7561f9f339cb1b6ba38d8dc946edd79f1596ac1b0f66&devicename=My%20Awesome%20iPhone&devicemodel=iPhone&deviceversion=3.1.2&pushbadge=enabled&pushalert=disabled&pushsound=enabled
 	 *
 	 * @param object $db Database Object
+	 * @param string $clientId The client ID to use when registering devices and pushing notifications
 	 * @param array $args Optional arguments passed through $argv or $_GET
 	 * @param string $certificate Path to the production certificate.
 	 * @param string $sandboxCertificate Path to the production certificate.
 	 * @param string $logPath Path to the log file.
 	 * @access 	public
 	 */
-	function __construct($db, $args=NULL, $certificate=NULL, $sandboxCertificate=NULL, $logPath=NULL) {
+	function __construct($db, $clientId, $args=NULL, $certificate=NULL, $sandboxCertificate=NULL, $logPath=NULL) {
 
 		if(!empty($certificate) && file_exists($certificate))
 		{
@@ -184,6 +193,8 @@ class APNS {
 		{
 			$this->sandboxCertificate = $sandboxCertificate;
 		}
+
+		$this->clientId = $clientId;
 
 		$this->db = $db;
 		$this->checkSetup();
@@ -295,7 +306,7 @@ class APNS {
 		$pushbadge = $this->db->prepare($pushbadge);
 		$pushalert = $this->db->prepare($pushalert);
 		$pushsound = $this->db->prepare($pushsound);
-		$clientid = $this->db->prepare($clientid);
+		$clientid = (is_null($clientid)) ? $this->db->prepare($this->clientId) : $this->db->prepare($clientid);
 
 		// store device for push notifications
 		$this->db->query("SET NAMES 'utf8';"); // force utf8 encoding if not your default
@@ -367,6 +378,7 @@ class APNS {
 			WHERE `apns_messages`.`status`='queued'
 				AND `apns_messages`.`delivery` <= NOW()
 				AND `apns_devices`.`status`='active'
+				AND `apns_messages`.`clientid`='{$this->db->prepare($this->clientId)}'
 			GROUP BY `apns_messages`.`fk_device`
 			ORDER BY `apns_messages`.`created` ASC
 			LIMIT 100;";
@@ -405,6 +417,7 @@ class APNS {
 			WHERE `apns_messages`.`status`='queued'
 				AND `apns_messages`.`delivery` <= NOW()
 				AND `apns_devices`.`status`='active'
+				AND `apns_messages`.`clientid`='{$this->db->prepare($this->clientId)}'
 			ORDER BY `apns_messages`.`created` ASC
 			LIMIT 100;";
 
@@ -630,6 +643,10 @@ class APNS {
 			$this->_triggerError('An existring message already created but not delivered. The previous message has been removed. Use queueMessage() to complete a message.');
 		}
 
+		// Check if we need default client ID
+		if(is_null($clientId))
+			$clientId = $this->clientId;
+
 		// If no device is specified then that means we sending a message to all.
 		if (is_null($fk_device))
 		{
@@ -688,7 +705,7 @@ class APNS {
 	public function newMessageByApp($appName, $appVersion=NULL, $delivery=NULL, $clientId=NULL) {
 
 		// Grab pid of all devices using this app and version
-		$sql = "SELECT `pid` FROM `apns_devices` WHERE `appname` = '{$this->db->prepare($appName)}'";
+		$sql = "SELECT `pid` FROM `apns_devices` WHERE `status` = 'active' AND `appname` = '{$this->db->prepare($appName)}'";
 		if ($appVersion != NULL)
 			$sql .= " AND `appversion` = '{$this->db->prepare($appVersion)}'";
 

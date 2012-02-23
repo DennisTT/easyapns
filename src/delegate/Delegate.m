@@ -27,6 +27,7 @@
 	// Get Bundle Info for Remote Registration (handy if you have more than one app)
 	NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleDisplayName"];
 	NSString *appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"];
+    NSString *appId = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleIdentifier"];
 	
 	// Check what Notifications the user has turned on.  We registered for all three, but they may have manually disabled some or all of them.
 	NSUInteger rntypes = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
@@ -71,7 +72,7 @@
 	// !!! CHANGE "/apns.php?" TO THE PATH TO WHERE apns.php IS INSTALLED 
 	// !!! ( MUST START WITH / AND END WITH ? ). 
 	// !!! SAMPLE: "/path/to/apns.php?"
-	NSString *urlString = [NSString stringWithFormat:@"/apns.php?task=%@&appname=%@&appversion=%@&deviceuid=%@&devicetoken=%@&devicename=%@&devicemodel=%@&deviceversion=%@&pushbadge=%@&pushalert=%@&pushsound=%@", @"register", appName,appVersion, deviceUuid, deviceToken, deviceName, deviceModel, deviceSystemVersion, pushBadge, pushAlert, pushSound];
+	NSString *urlString = [NSString stringWithFormat:@"/apns.php?task=%@&appname=%@&appversion=%@&deviceuid=%@&devicetoken=%@&devicename=%@&devicemodel=%@&deviceversion=%@&pushbadge=%@&pushalert=%@&pushsound=%@&clientid=%@", @"register", appName,appVersion, deviceUuid, deviceToken, deviceName, deviceModel, deviceSystemVersion, pushBadge, pushAlert, pushSound, appId];
 	
 	// Register the Device Data
 	// !!! CHANGE "http" TO "https" IF YOU ARE USING HTTPS PROTOCOL

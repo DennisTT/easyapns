@@ -47,5 +47,5 @@ $db->show_errors();
 $args = (!empty($_GET)) ? $_GET:array('task'=>$argv[1]);
 
 // CREATE APNS OBJECT, WITH DATABASE OBJECT AND ARGUMENTS
-$apns = new APNS($db, $args);
+$apns = new APNS($db, $args, 'com.yourcompany.yourapp');
 ?>
